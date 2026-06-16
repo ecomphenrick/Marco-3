@@ -1,6 +1,6 @@
-.equ PIO_DATA_OUT, 0x00
-.equ PIO_SIGNALS,  0x10
-.equ PIO_DATA_IN,  0x20    
+.equ PIO_DATA_OUT, 0x20
+.equ PIO_SIGNALS,  0x30
+.equ PIO_DATA_IN,  0x40
 .equ LW_BASE_PAGE, 0xFF200  
 
 .data

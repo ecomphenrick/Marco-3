@@ -13,9 +13,8 @@
 // =============================================
 // DEFINIÇÕES VGA
 // =============================================
-#define PIO_VGA_STATUS_OFFSET  0x30
-#define PIO_VGA_SIGNALS_OFFSET 0x40
-#define PIO_VGA_DATA_OFFSET    0x50
+#define PIO_VGA_IN_OFFSET  0x00  // pio_vga_in  → done
+#define PIO_VGA_OUT_OFFSET 0x10  // pio_vga_out → enable/reset/dados
 
 #define BOX_WIDTH    224
 #define BOX_HEIGHT   224
@@ -25,11 +24,11 @@
 #define BOX_Y_END    (BOX_Y_START + BOX_HEIGHT)
 
 // Tamanhos dos buffers
-#define BIAS_SIZE    256
-#define BETA_SIZE    2560
-#define PESOS_SIZE   200704
-#define IMAGEM_SIZE  784
-#define PESOS_COUNT  100352
+#define BIAS_SIZE     256
+#define BETA_SIZE     2560
+#define PESOS_SIZE    200704
+#define IMAGEM_SIZE   784
+#define PESOS_COUNT   100352
 #define TOTAL_IMAGENS 1000
 
 typedef struct {
@@ -57,28 +56,27 @@ void handler(int sig) {
 // FUNÇÕES VGA
 // =============================================
 void vga_reset(void* base_virtual) {
-    volatile uint32_t* vga_signals = (volatile uint32_t*)((uint8_t*)base_virtual + PIO_VGA_SIGNALS_OFFSET);
-    *vga_signals = 0x02;
+    volatile uint32_t* vga_out = (volatile uint32_t*)((uint8_t*)base_virtual + PIO_VGA_OUT_OFFSET);
+    *vga_out = (1 << 27);
     usleep(1000);
-    *vga_signals = 0x00;
+    *vga_out = 0;
 }
 
 void vga_draw_pixel(void* base_virtual, uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {
-    volatile uint32_t* vga_status  = (volatile uint32_t*)((uint8_t*)base_virtual + PIO_VGA_STATUS_OFFSET);
-    volatile uint32_t* vga_signals = (volatile uint32_t*)((uint8_t*)base_virtual + PIO_VGA_SIGNALS_OFFSET);
-    volatile uint32_t* vga_data    = (volatile uint32_t*)((uint8_t*)base_virtual + PIO_VGA_DATA_OFFSET);
+    volatile uint32_t* vga_in  = (volatile uint32_t*)((uint8_t*)base_virtual + PIO_VGA_IN_OFFSET);
+    volatile uint32_t* vga_out = (volatile uint32_t*)((uint8_t*)base_virtual + PIO_VGA_OUT_OFFSET);
 
-    uint32_t palavra = ((uint32_t)(y & 0x3FF) << 19) |
-                       ((uint32_t)(x & 0x3FF) << 9)  |
-                       ((uint32_t)(r & 0x07)  << 6)  |
-                       ((uint32_t)(g & 0x07)  << 3)  |
-                       ((uint32_t)(b & 0x03));
+    uint32_t command = 0;
+    command |= (x & 0x1FF);
+    command |= ((y & 0xFF) << 9);
+    command |= ((r & 0x07) << 17);
+    command |= ((g & 0x07) << 20);
+    command |= ((b & 0x07) << 23);
 
-    *vga_data    = palavra;
-    *vga_signals = 0x01;
+    *vga_out = command | (1 << 26);
     for (volatile int i = 0; i < 5; i++);
-    while ((*vga_status & 0x01) == 0);
-    *vga_signals = 0x00;
+    while ((*vga_in & 0x01) == 0);
+    *vga_out = command;
 }
 
 void vga_clear_screen(void* base_virtual, uint8_t r, uint8_t g, uint8_t b) {
@@ -272,7 +270,6 @@ void modo_desenho(void* endereco) {
 
     close(fd);
 
-    // Extrai vetor 28x28
     uint8_t imagem[784];
     for (int cell_y = 0; cell_y < 28; cell_y++) {
         for (int cell_x = 0; cell_x < 28; cell_x++) {
@@ -323,13 +320,10 @@ void modo_avaliar(void* base_virtual) {
 
     for (int i = 0; i < TOTAL_IMAGENS; i++) {
         snprintf(nome_arquivo, sizeof(nome_arquivo), "bins/%d.bin", i);
-
-        // Gabarito: 0-99=0, 100-199=1, ..., 900-999=9
         int digito_correto = i / 100;
 
         if (ler_arquivo(nome_arquivo, buf_imagem, IMAGEM_SIZE) < 0) continue;
 
-        // Exibe no VGA
         vga_clear_screen(base_virtual, 0, 0, 0);
         exibe_imagem_no_vga(base_virtual, buf_imagem);
 
