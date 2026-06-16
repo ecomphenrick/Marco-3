@@ -102,3 +102,71 @@ refletissem o comportamento real do sistema.
 **Cálculo de acurácia (%), latência média, desvio padrão e throughput (imagens/s)**
 
 **Log de resultados salvo em CSV**
+
+## 4. Fundamentação Teórica
+
+### 4.1 IP-Core VGA
+
+O IP-Core VGA foi utilizado para permitir a exibição de imagens e 
+informações diretamente no monitor conectado à placa DE1-SoC. Esse módulo, 
+disponibilizado para a disciplina, é responsável por gerar os sinais de 
+vídeo necessários para a saída VGA.
+
+A comunicação entre o HPS e o IP-Core ocorre por meio de MMIO, utilizando 
+registradores mapeados em memória. Dessa forma, a aplicação consegue enviar 
+pixels individualmente para serem desenhados na tela. Cada pixel é 
+representado por uma palavra de 32 bits contendo informações de posição e 
+cor. Nesse formato, os bits mais significativos carregam as coordenadas X 
+e Y do pixel, enquanto os bits menos significativos definem as componentes 
+de cor RGB — com 3 bits para vermelho, 3 para verde e 2 para azul.
+
+Durante o desenvolvimento, o módulo VGA foi utilizado principalmente para 
+exibir imagens do conjunto MNIST e permitir a interação do usuário no modo 
+de desenho, facilitando a visualização dos dados enviados ao co-processador.
+
+---
+
+### 4.2 Modos de Operação
+
+A aplicação foi desenvolvida com três modos principais de operação, 
+permitindo diferentes formas de utilização do sistema.
+
+No modo Arquivo, o usuário informa o caminho de uma imagem do conjunto 
+MNIST armazenada em formato binário. A imagem é exibida na tela, enviada 
+ao co-processador e o dígito reconhecido é apresentado ao usuário.
+
+No modo Desenho, o usuário pode desenhar manualmente um dígito utilizando 
+o mouse. O botão esquerdo é utilizado para desenhar e o botão direito para 
+confirmar o desenho. Após a confirmação, o desenho é convertido para o 
+formato esperado pela rede neural e enviado para classificação. Antes do 
+envio, é aplicado um filtro simples para suavizar os traços e melhorar a 
+aproximação com as imagens utilizadas no treinamento.
+
+Já o modo Benchmark realiza a execução automática de um conjunto de 1000 
+imagens, exibindo cada uma no monitor durante o processamento. O gabarito 
+é fixo — imagens de 0 a 99 correspondem ao dígito 0, de 100 a 199 ao 
+dígito 1, e assim sucessivamente até 900 a 999 para o dígito 9. Ao final 
+do processo, são calculadas métricas como acurácia, latência e throughput, 
+além da geração de um arquivo CSV contendo os resultados obtidos.
+
+---
+
+### 4.3 Métricas de Benchmark
+
+Para avaliar o desempenho do sistema foram utilizadas métricas amplamente 
+empregadas em aplicações de classificação de imagens.
+
+A acurácia representa o percentual de imagens classificadas corretamente 
+em relação ao total processado, permitindo avaliar a qualidade das 
+inferências realizadas pelo co-processador.
+
+A latência corresponde ao tempo necessário para processar uma única imagem, 
+sendo medida durante a etapa de inferência. Essa métrica permite verificar 
+a velocidade de resposta do sistema.
+
+Além disso, foi calculado o desvio padrão das latências, utilizado para 
+analisar a estabilidade do tempo de execução entre diferentes inferências.
+
+Por fim, o throughput indica a quantidade de imagens que podem ser 
+classificadas por segundo, fornecendo uma visão geral da capacidade de 
+processamento da solução desenvolvida.
