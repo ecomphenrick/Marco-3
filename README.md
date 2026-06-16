@@ -15,7 +15,7 @@ integrando o co-processador ELM desenvolvido nos marcos anteriores.
 - [4. Fundamentação Teórica](#4-fundamentação-teórica)
   - [4.1 IP-Core VGA](#41-ip-core-vga)
   - [4.2 Modos de Operação](#42-modos-de-operação)
-  - [4.3 Métricas de Benchmark](#43-métricas-de-benchmark)
+  - [4.3 Benchmark](#43-benchmark)
 - [5. Materiais e Métodos](#5-materiais-e-métodos)
   - [5.1 DE1-SoC](#51-de1-soc)
   - [5.2 IP-Core VGA](#52-ip-core-vga)
