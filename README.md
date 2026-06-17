@@ -92,7 +92,7 @@ Conectar o módulo de vídeo disponibilizado pelo tutor ao projeto existente,
 sem necessidade de alterar o co-processador.
 
 ### Modo Arquivo
-Ler uma imagem em formato `.bin` armazenada no disco e classificá-la 
+Ler uma imagem em formato .bin armazenada no disco e classificá-la 
 utilizando o co-processador.
 
 ### Modo Desenho
