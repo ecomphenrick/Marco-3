@@ -16,11 +16,13 @@ integrando o co-processador ELM desenvolvido nos marcos anteriores.
   - [4.1 IP-Core VGA](#41-ip-core-vga)
   - [4.2 Modos de Operação](#42-modos-de-operação)
   - [4.3 Benchmark](#43-benchmark)
+  - [4.4 Protocolo do Mouse Linux](#44-protocolo-do-mouse-linux)
 - [5. Materiais e Métodos](#5-materiais-e-métodos)
   - [5.1 DE1-SoC](#51-de1-soc)
   - [5.2 IP-Core VGA](#52-ip-core-vga)
-  - [5.3 Driver Assembly — Marco 2](#53-driver-assembly--marco-2)
-  - [5.4 Metodologia](#54-metodologia)
+  - [5.3 Mouse](#53-mouse)
+  - [5.4 Driver Assembly — Marco 2](#54-driver-assembly--marco-2)
+  - [5.5 Metodologia](#55-metodologia)
 - [6. Arquitetura da Solução](#6-arquitetura-da-solução)
   - [6.1 Visão Geral](#61-visão-geral)
   - [6.2 Fluxo de Execução](#62-fluxo-de-execução)
@@ -32,7 +34,6 @@ integrando o co-processador ELM desenvolvido nos marcos anteriores.
 - [8. Modo de Uso](#8-modo-de-uso)
 - [9. Testes e Resultados](#9-testes-e-resultados)
 - [10. Referências](#10-referências)
-
 ---
 
 ## 1. Introdução
@@ -151,7 +152,7 @@ além da geração de um arquivo CSV contendo os resultados obtidos.
 
 ---
 
-### 4.3 Métricas de Benchmark
+### 4.3 Benchmark
 
 Para avaliar o desempenho do sistema foram utilizadas métricas amplamente 
 empregadas em aplicações de classificação de imagens.
@@ -170,3 +171,25 @@ analisar a estabilidade do tempo de execução entre diferentes inferências.
 Por fim, o throughput indica a quantidade de imagens que podem ser 
 classificadas por segundo, fornecendo uma visão geral da capacidade de 
 processamento da solução desenvolvida.
+
+### 4.4 Protocolo do Mouse Linux
+
+No sistema Linux, dispositivos de hardware são representados como arquivos, 
+seguindo o conceito herdado do Unix de que "tudo é arquivo". Quando um mouse 
+USB é conectado, o kernel disponibiliza sua interface através do arquivo 
+`/dev/input/mice`, permitindo que aplicações leiam seus eventos utilizando 
+operações convencionais de entrada e saída.
+
+O protocolo utilizado por esse dispositivo envia pacotes de 3 bytes a cada 
+movimentação ou clique do usuário. O primeiro byte contém informações sobre 
+os botões pressionados e flags de controle, enquanto os dois bytes seguintes 
+representam os deslocamentos relativos nos eixos X e Y. Esses deslocamentos 
+variam de -128 a 127 e indicam apenas quanto o mouse se moveu desde o último 
+evento, não sua posição absoluta na tela.
+
+Para determinar a posição atual do cursor, o software acumula os deslocamentos 
+recebidos a cada leitura. No eixo Y é necessário inverter o sinal do movimento, 
+pois o protocolo do mouse considera valores positivos para cima, enquanto o 
+sistema de coordenadas da tela VGA utiliza valores positivos para baixo. Além 
+disso, a posição calculada deve ser limitada aos limites da área de desenho 
+para impedir que o cursor ultrapasse o canvas.
