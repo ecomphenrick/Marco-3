@@ -193,3 +193,75 @@ pois o protocolo do mouse considera valores positivos para cima, enquanto o
 sistema de coordenadas da tela VGA utiliza valores positivos para baixo. Além 
 disso, a posição calculada deve ser limitada aos limites da área de desenho 
 para impedir que o cursor ultrapasse o canvas.
+
+## 5. Métodos e Materiais 
+
+### 5.1 DE1-SoC
+
+A DE1-SoC continuou sendo a plataforma principal do projeto. A placa 
+possui um processador ARM Cortex-A9 dual-core executando Linux embarcado 
+e uma FPGA Cyclone V responsável pela implementação dos módulos em hardware.
+
+Em relação ao Marco 2, foram adicionados três novos PIOs para comunicação 
+com o controlador VGA, mapeados nos offsets 0x30, 0x40 e 0x50 da Lightweight 
+Bridge. Além disso, foi conectado um monitor VGA externo e um mouse USB 
+para interação com o sistema. Após as modificações, um novo arquivo .sof 
+foi gerado e gravado na FPGA.
+
+---
+
+### 5.2 IP-Core VGA
+
+O IP-Core VGA é o módulo responsável pela geração da saída de vídeo da 
+DE1-SoC. Ele gera automaticamente os sinais de sincronismo horizontal 
+(hsync) e vertical (vsync), além dos sinais de cor enviados ao monitor.
+
+O módulo utiliza uma memória dual-port de 320×240 posições com 9 bits de 
+cor por pixel. Durante a exibição, cada pixel é ampliado para uma área 
+2×2, permitindo a visualização em resolução VGA de 640×480.
+
+A comunicação com o HPS ocorre através de registradores mapeados em 
+memória, onde são enviados os valores de coordenadas e cor dos pixels. 
+Cada pixel é representado por uma palavra de 32 bits, contendo a posição 
+X, a posição Y e os componentes de cor RGB combinados em um único valor 
+antes de ser escrito no registrador de dados.
+
+---
+
+### 5.3 Mouse
+
+O mouse foi utilizado como principal dispositivo de entrada no modo de 
+desenho. Quando conectado à DE1-SoC, ele é reconhecido automaticamente 
+pelo Linux embarcado, que disponibiliza seus eventos através do arquivo 
+`/dev/input/mice`, sem necessidade de configuração adicional.
+
+Durante a execução do programa, o movimento relativo reportado pelo mouse 
+é acumulado para atualizar continuamente a posição do cursor no canvas de 
+224×224 pixels exibido no VGA. Como esse canvas representa uma grade de 
+28×28 células correspondente ao formato de entrada do conjunto MNIST, cada 
+célula ocupa uma região de 8×8 pixels na tela.
+
+Enquanto o botão esquerdo permanece pressionado, a célula correspondente 
+à posição atual do cursor é preenchida em branco tanto na estrutura interna 
+do canvas quanto na imagem exibida no VGA. Já o botão direito é utilizado 
+para finalizar o desenho. Ao ser acionado, o programa encerra a captura de 
+eventos do mouse, extrai a matriz 28×28 gerada pelo usuário, aplica o filtro 
+de suavização (blur) e envia os dados ao co-processador para realização da 
+inferência.
+
+---
+
+### 5.4 Driver Assembly — Marco 2
+
+O driver Assembly desenvolvido no Marco 2 foi reutilizado no Marco 3. As 
+funções de mapeamento de memória (`mapeia_memoria()`), reset do co-processador 
+(`reset_coprocessador()`) e início da inferência (`comeca_infer()`) 
+permaneceram sem alterações.
+
+A principal mudança ocorreu nas funções de transferência de dados. Em vez 
+de receber caminhos para arquivos, elas passaram a receber buffers já 
+carregados em memória, como em `store_bias(base, buf_bias)`. A função 
+`store_pesos` também passou a receber um terceiro parâmetro indicando a 
+quantidade de valores a enviar, como em `store_pesos(base, buf_pesos, 100352)`. 
+Essa alteração permitiu que o programa principal realizasse pré-processamentos 
+e medições de desempenho sem incluir o tempo de leitura dos arquivos.
