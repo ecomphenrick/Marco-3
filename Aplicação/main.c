@@ -348,7 +348,6 @@ void modo_avaliar(void* base_virtual) {
     char nome_arquivo[64];
 
     // Carrega pesos uma vez só
-    reset_coprocessador(base_virtual);
     ler_arquivo("bins/beta_q.bin", buf_beta,  BETA_SIZE);
     ler_arquivo("bins/b_q.bin",    buf_bias,  BIAS_SIZE);
     ler_arquivo("bins/W_in_q.bin", buf_pesos, PESOS_SIZE);
@@ -356,16 +355,19 @@ void modo_avaliar(void* base_virtual) {
     store_bias(base_virtual,  buf_bias);
     store_pesos(base_virtual, buf_pesos, PESOS_COUNT);
 
+
     printf("Iniciando benchmark com %d imagens...\n", TOTAL_IMAGENS);
 
     for (int i = 0; i < TOTAL_IMAGENS; i++) {
+        reset_coprocessador(base_virtual);
+
         snprintf(nome_arquivo, sizeof(nome_arquivo), "bins/%d.bin", i);
         int digito_correto = i / 100;
 
         if (ler_arquivo(nome_arquivo, buf_imagem, IMAGEM_SIZE) < 0) continue;
 
-        vga_clear_screen(base_virtual, 0, 0, 0);
-        exibe_imagem_no_vga(base_virtual, buf_imagem);
+        //vga_clear_screen(base_virtual, 0, 0, 0);
+        //exibe_imagem_no_vga(base_virtual, buf_imagem);
 
         store_imagem(base_virtual, buf_imagem);
 
@@ -388,8 +390,8 @@ void modo_avaliar(void* base_virtual) {
         if (acerto) acertos++;
 
         fprintf(out, "%d,%d,%u,%d,%.3f\n", i, digito_correto, resultado, acerto, latencia_ms);
-        printf("Imagem %4d | Correto: %d | Inferido: %d | %s | %.3f ms\n",
-            i, digito_correto, resultado, acerto ? "OK" : "ERRO", latencia_ms);
+        printf("Imagem %4d | Correto: %d | Inferido: %d | %s | %.3f ms\n",i, digito_correto, resultado, acerto ? "OK" : "ERRO", latencia_ms);
+        
     }
 
     double media = latencia_total / total;
@@ -421,6 +423,122 @@ void modo_avaliar(void* base_virtual) {
     printf("========================================\n");
 }
 
+
+// =============================================
+// MODO 4: Avaliar Modelo (Benchmark) com arquivo csv
+// =============================================
+void modo_avaliar_csv(void* base_virtual, const char* arquivo_entrada) {
+    FILE* in = fopen(arquivo_entrada, "r");
+    FILE* out = fopen("resultado.csv", "w");
+    
+    if (!in || !out) {
+        printf("Erro ao abrir os arquivos CSV.\n");
+        if(in) fclose(in);
+        if(out) fclose(out);
+        return;
+    }
+
+    fprintf(out, "imagem,digito_correto,digito_inferido,acerto,latencia_ms\n");
+
+    char linha[512];
+    int total = 0, acertos = 0;
+    double latencia_total = 0.0;
+    double latencias[TOTAL_IMAGENS];
+    int primeira_linha = 1;
+    int total_imagens = 0;
+    
+    ler_arquivo("bins/beta_q.bin", buf_beta,  BETA_SIZE);
+    ler_arquivo("bins/b_q.bin",    buf_bias,  BIAS_SIZE);
+    ler_arquivo("bins/W_in_q.bin", buf_pesos, PESOS_SIZE);
+    store_beta(base_virtual,  buf_beta);
+    store_bias(base_virtual,  buf_bias);
+    store_pesos(base_virtual, buf_pesos, PESOS_COUNT);
+
+    printf("Iniciando inferencia em lote (Benchmark)...\n");
+
+    while (fgets(linha, sizeof(linha), in)) {
+        if (primeira_linha && strstr(linha, "digito") != NULL) {
+            primeira_linha = 0;
+            continue;
+        }
+        primeira_linha = 0;
+        
+        linha[strcspn(linha, "\r\n")] = 0;
+
+        char* token_digito = strtok(linha, ",");
+        char* token_caminho = strtok(NULL, ",");
+
+        if (token_digito && token_caminho) {
+            int digito_predito = atoi(token_digito);
+
+            char caminho_limpo[256];
+            int idx = 0;
+            for(int i = 0; token_caminho[i] != '\0'; i++) {
+                if(token_caminho[i] != '"' && token_caminho[i] != '\'') {
+                    caminho_limpo[idx++] = token_caminho[i];
+                }
+            }
+            caminho_limpo[idx] = '\0';
+            char* ext = strrchr(caminho_limpo, '.');
+            
+            reset_coprocessador(base_virtual);
+            if (ext && strcmp(ext, ".png") == 0) {
+                if (png_para_buffer(caminho_limpo, buf_imagem) < 0) continue;
+            } else if (ext && strcmp(ext, ".bin") == 0) {
+                if (ler_arquivo(caminho_limpo, buf_imagem, IMAGEM_SIZE) < 0) continue;
+            }
+            store_imagem(base_virtual, buf_imagem);
+            
+            struct timespec inicio, fim;
+            clock_gettime(CLOCK_MONOTONIC, &inicio);
+
+            unsigned int resultado = comeca_infer(base_virtual) & 0x0F;
+
+            clock_gettime(CLOCK_MONOTONIC, &fim);
+
+            double latencia = (fim.tv_sec - inicio.tv_sec) +
+                              (fim.tv_nsec - inicio.tv_nsec) / 1e9;
+            double latencia_ms = latencia * 1000.0;
+
+            latencias[total] = latencia;
+            latencia_total += latencia;
+            total++;
+
+            int acerto = (resultado == (unsigned int)digito_predito ? 1 : 0);
+            if (acerto) acertos++;
+
+            fprintf(out, "%s,%d,%u,%d,%.3f\n", caminho_limpo, digito_predito, resultado, acerto, latencia_ms);
+            printf("Imagem %s | Correto: %d | Inferido: %d | %s | %.3f ms\n",
+                caminho_limpo, digito_predito, resultado, acerto ? "OK" : "ERRO", latencia_ms);
+            
+            total_imagens++;
+        }
+    }
+
+    fclose(in);
+    fclose(out);
+
+    if (total_imagens > 0) {
+        double acuracia = ((double)acertos / total_imagens) * 100.0;
+        double latencia_media = latencia_total / total_imagens;
+        double throughput = total_imagens / latencia_total;
+
+        printf("\n========================================\n");
+        printf("        RELATORIO DE DESEMPENHO         \n");
+        printf("========================================\n");
+        printf("Total lidas    : %d\n", total_imagens);
+        printf("Acertos        : %d\n", acertos);
+        printf("Acuracia       : %.2f %%\n", acuracia);
+        printf("Latencia media : %.6f segundos\n", latencia_media);
+        printf("Throughput     : %.2f imagens/segundo\n", throughput);
+        printf("========================================\n");
+        printf("Resultados gravados em: resultado.csv\n\n");
+    } else {
+        printf("Nenhuma imagem processada. Verifique o arquivo CSV de entrada.\n");
+    }
+}
+
+
 // =============================================
 // MAIN
 // =============================================
@@ -430,6 +548,7 @@ int main() {
 
     printf("Mapeando memória do hardware...\n");
     void* endereco = mapeia_memoria();
+    printf("%p\n", endereco);
     if (!endereco || endereco == (void*)-1) {
         printf("Erro no mapeamento.\n");
         return -1;
@@ -439,13 +558,15 @@ int main() {
     vga_reset(endereco);
     usleep(100000);
     vga_clear_screen(endereco, 0, 0, 0);
-
+    char csv_entrada[128];
+    
     int opcao;
     while (1) {
         printf("\n=== CLASSIFICADOR DE DÍGITOS ===\n");
         printf("1. Inferência a partir de arquivo\n");
         printf("2. Desenhar e classificar (VGA + mouse)\n");
         printf("3. Benchmark (1000 imagens)\n");
+        printf("4. Benchmark com arquivo csv\n");
         printf("0. Sair\n");
         printf("Escolha: ");
 
@@ -466,7 +587,22 @@ int main() {
             printf("Saindo...\n");
             munmap(endereco, 0x1000);
             break;
-        } else {
+        } else if (opcao == 4) {
+            // Limpa o buffer de entrada do teclado
+            
+
+            printf("\n--- CONFIGURAÇÃO DO BENCHMARK ---\n");
+            printf("O arquivo contendo os caminhos deve seguir o padrão Digito,Caminho\n");
+            printf("Exemplo de Arquivo no diretorio de aplicação\n");
+            printf("Digite o caminho do CSV de entrada (ex: caminhos.csv): ");
+            if (fgets(csv_entrada, sizeof(csv_entrada), stdin) != NULL) {
+                csv_entrada[strcspn(csv_entrada, "\r\n")] = 0; // Remove o \n
+            }
+
+            // Executa a avaliação com os arquivos digitados
+            modo_avaliar_csv(endereco, csv_entrada);
+        }
+        else {
             printf("Opção inválida!\n");
         }
     }
