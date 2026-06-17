@@ -84,26 +84,44 @@ convertido para o formato que o hardware espera. Por fim, o modo benchmark
 exigiu atenção na medição de tempo para que as métricas calculadas 
 refletissem o comportamento real do sistema.
 
-### 3.2 Requisitos Principais
 
-**Integração do IP-Core VGA ao projeto existente**
+## 3.2 Requisitos Principais
 
-**Modo de inferência a partir de imagem lida de arquivo**
+### Integração do IP-Core VGA
+Conectar o módulo de vídeo disponibilizado pelo tutor ao projeto existente, 
+sem necessidade de alterar o co-processador.
 
-**Modo de inferência a partir de desenho capturado via mouse e VGA**
+### Modo Arquivo
+Ler uma imagem em formato `.bin` armazenada no disco e classificá-la 
+utilizando o co-processador.
 
-**Modo de validação/benchmark com N imagens**
+### Modo Desenho
+Permitir que o usuário desenhe um dígito na tela utilizando o mouse, e 
+classificar o desenho resultante.
 
-**Interface via linha de comando** (caminho da imagem e parâmetros)
+### Modo Benchmark
+Executar a classificação de várias imagens automaticamente e medir o 
+desempenho do sistema.
 
-**Exibição da imagem a ser inferida via VGA**
+### Interface via Linha de Comando
+Permitir a escolha do modo de operação e a passagem de parâmetros 
+diretamente no terminal, sem necessidade de alterar o código.
 
-**Comunicação com o co-processador via driver do Marco 2**
+### Exibição via VGA
+Exibir a imagem a ser classificada no monitor antes da inferência, 
+fornecendo feedback visual ao usuário.
 
-**Cálculo de acurácia (%), latência média, desvio padrão e throughput (imagens/s)**
+### Comunicação com o Co-processador via Driver do Marco 2
+Utilizar as funções do driver Assembly já desenvolvidas no Marco 2 para 
+realizar a comunicação com o co-processador.
 
-**Log de resultados salvo em CSV**
+### Cálculo de Métricas
+Medir o desempenho do sistema através de métricas como acurácia, latência 
+média, desvio padrão e throughput.
 
+### Log de Resultados em CSV
+Salvar os resultados obtidos durante a execução em um arquivo CSV para 
+possibilitar análises posteriores.
 ## 4. Fundamentação Teórica
 
 ### 4.1 IP-Core VGA
