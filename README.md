@@ -254,8 +254,8 @@ inferência.
 ### 5.4 Driver Assembly — Marco 2
 
 O driver Assembly desenvolvido no Marco 2 foi reutilizado no Marco 3. As 
-funções de mapeamento de memória (`mapeia_memoria()`), reset do co-processador 
-(`reset_coprocessador()`) e início da inferência (`comeca_infer()`) 
+funções de mapeamento de memória (mapeia_memoria()), reset do co-processador 
+(reset_coprocessador()) e início da inferência (comeca_infer()) 
 permaneceram sem alterações.
 
 A principal mudança ocorreu nas funções de transferência de dados. Em vez 
