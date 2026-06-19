@@ -228,7 +228,7 @@ void modo_desenho(void* endereco) {
     vga_reset(endereco);
     usleep(100000);
     vga_clear_screen(endereco, 0, 0, 0);
-
+    printf("\nIniciando o Modo Desenho\n");
     for (int y = 0; y < VGA_HEIGHT; y++) {
         for (int x = 0; x < VGA_WIDTH; x++) {
             if (x >= BOX_X_START && x < BOX_X_END && y >= BOX_Y_START && y < BOX_Y_END) canvas[x][y] = (Pixel){0, 0, 0};
@@ -302,6 +302,15 @@ void modo_desenho(void* endereco) {
     aplicar_blur(imagem);
     carregar_pesos(endereco);
     store_imagem(endereco, imagem);
+    printf("\n--------------------------------\n");
+    printf("\nImagem capturada (28x28):\n");
+    for (int row = 0; row < 28; row++) {
+        for (int col = 0; col < 28; col++) {
+            printf(imagem[row * 28 + col] > 127 ? "# " : "  ");
+        }
+        printf("\n");
+    }
+    printf("--------------------------------\n");
     printf("\n--------------------------------\n");
     printf("Dígito reconhecido: %d\n", comeca_infer(endereco) & 0x0F);
     printf("--------------------------------\n");
