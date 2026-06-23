@@ -35,7 +35,7 @@ integrando o co-processador ELM desenvolvido nos marcos anteriores.
 
 ---
 
-## 1. Introdução
+## Introdução
 
 Esse repositório é referente ao Marco 3 da disciplina de SD (Sistemas 
 Digitais) - TEC499. Depois de dois marcos focados no hardware e na 
@@ -50,7 +50,7 @@ interface visual pelo VGA e três formas diferentes de uso.
 
 ---
 
-## 2. Sobre o Projeto
+## Sobre o Projeto
 
 O sistema classifica dígitos manuscritos de 0 a 9 usando o modelo ELM 
 rodando diretamente no hardware da FPGA. A aplicação desse marco é a parte 
@@ -64,9 +64,9 @@ o que o usuário desenha com o mouse para depois mandar ao co-processador.
 
 ---
 
-## 3. Declaração do Problema
+## Declaração do Problema
 
-### 3.1 Contexto
+### Contexto
 
 No Marco 2 o driver ficou funcional, com acurácia acima de 80% nos testes, 
 mas a inferência só rodava através de um programa de testes simples em C, 
@@ -84,7 +84,7 @@ exigiu atenção na medição de tempo para que as métricas calculadas
 refletissem o comportamento real do sistema.
 
 
-## 3.2 Requisitos Principais
+## Requisitos Principais
 
 ### Integração do IP-Core VGA
 Conectar o módulo de vídeo disponibilizado pelo tutor ao projeto existente, 
@@ -123,7 +123,7 @@ Salvar os resultados obtidos durante a execução em um arquivo CSV para
 possibilitar análises posteriores.
 ## 4. Fundamentação Teórica
 
-### 4.1 IP-Core VGA
+### IP-Core VGA
 
 O IP-Core VGA foi utilizado para permitir a exibição de imagens e 
 informações diretamente no monitor conectado à placa DE1-SoC. Esse módulo, 
@@ -144,7 +144,7 @@ de desenho, facilitando a visualização dos dados enviados ao co-processador.
 
 ---
 
-### 4.2 Modos de Operação
+### Modos de Operação
 
 A aplicação foi desenvolvida com três modos principais de operação, 
 permitindo diferentes formas de utilização do sistema.
@@ -169,7 +169,7 @@ além da geração de um arquivo CSV contendo os resultados obtidos.
 
 ---
 
-### 4.3 Benchmark
+### Benchmark
 
 Para avaliar o desempenho do sistema foram utilizadas métricas amplamente 
 empregadas em aplicações de classificação de imagens.
@@ -189,7 +189,7 @@ Por fim, o throughput indica a quantidade de imagens que podem ser
 classificadas por segundo, fornecendo uma visão geral da capacidade de 
 processamento da solução desenvolvida.
 
-### 4.4 Protocolo do Mouse Linux
+### Protocolo do Mouse Linux
 
 No sistema Linux, dispositivos de hardware são representados como arquivos, 
 seguindo o conceito herdado do Unix de que "tudo é arquivo". Quando um mouse 
@@ -211,9 +211,9 @@ sistema de coordenadas da tela VGA utiliza valores positivos para baixo. Além
 disso, a posição calculada deve ser limitada aos limites da área de desenho 
 para impedir que o cursor ultrapasse o canvas.
 
-## 5. Métodos e Materiais 
+## Métodos e Materiais 
 
-### 5.1 DE1-SoC
+### DE1-SoC
 
 A DE1-SoC continuou sendo a plataforma principal do projeto. A placa 
 possui um processador ARM Cortex-A9 dual-core executando Linux embarcado 
@@ -227,7 +227,7 @@ foi gerado e gravado na FPGA.
 
 ---
 
-### 5.2 IP-Core VGA
+### IP-Core VGA
 
 O IP-Core VGA é o módulo responsável pela geração da saída de vídeo da 
 DE1-SoC. Ele gera automaticamente os sinais de sincronismo horizontal 
@@ -245,7 +245,7 @@ antes de ser escrito no registrador de dados.
 
 ---
 
-### 5.3 Mouse
+### Mouse
 
 O mouse foi utilizado como principal dispositivo de entrada no modo de 
 desenho. Quando conectado à DE1-SoC, ele é reconhecido automaticamente 
@@ -268,7 +268,7 @@ inferência.
 
 ---
 
-### 5.4 Driver Assembly — Marco 2
+### Driver Assembly — Marco 2
 
 O driver Assembly desenvolvido no Marco 2 foi reutilizado no Marco 3. As 
 funções de mapeamento de memória (mapeia_memoria()), reset do co-processador 
