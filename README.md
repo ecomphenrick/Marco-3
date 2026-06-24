@@ -131,7 +131,7 @@ O módulo foi utilizado principalmente para exibir imagens do conjunto
 MNIST e para fornecer feedback visual durante o modo de desenho.
 
 <p align="center">
-  <img src="ipcore.png" alt="IP-Core" width="600">
+  <img src="images/ipcore.png" alt="IP-Core" width="600">
 </p>
 
 ### 2.2. Modos de Operação
@@ -324,7 +324,7 @@ automaticamente. As seções seguintes detalham cada um desses modos
 individualmente.
 
 <p align="center">
-  <img src="visaogeral.png" alt="Diagrama da arquitetura geral da aplicação" width="600">
+  <img src="images/visaogeral.png" alt="Diagrama da arquitetura geral da aplicação" width="600">
 </p>
 
 ### 4.2. Modo Arquivo
@@ -352,6 +352,10 @@ ao co-processador.
 Após a exibição, os pesos da rede são carregados, a imagem é enviada ao
 hardware via `store_imagem`, e a inferência é disparada, retornando o
 dígito reconhecido.
+
+<p align="center">
+  <img src="images/arquivo.png" alt="IP-Core" width="600">
+</p>
 
 ### 4.3. Modo Desenho
 
@@ -386,6 +390,10 @@ da tela) e `vga_draw_pixel` (escrita individual de pixels), todas
 utilizadas tanto para desenhar a interface do canvas quanto para
 refletir, em tempo real, os traços feitos pelo usuário.
 
+<p align="center">
+  <img src="images/desenho.png" alt="IP-Core" width="600">
+</p>
+
 ### 4.4. Modo Benchmark
 
 O modo Benchmark automatiza a classificação de um conjunto de imagens
@@ -409,6 +417,10 @@ as métricas de desempenho — acurácia, latência média, desvio padrão e
 throughput — e os resultados são salvos em arquivos CSV (`resultado.csv`
 com o detalhamento por imagem, e `metricas_gerais.csv` com o resumo geral
 e por classe).
+
+<p align="center">
+  <img src="images/benchmark.png" alt="IP-Core" width="600">
+</p>
 
 ---
 
@@ -451,6 +463,10 @@ executada antes do próximo desenho. O teste confirmou que a função em si
 funcionava corretamente — o problema estava no tempo entre a chamada de
 limpeza e a chamada de desenho seguinte.
 
+<p align="center">
+  <img src="images/clear.jpeg" alt="IP-Core" width="600">
+</p>
+
 **Como foi resolvido:** Foi adicionado um pequeno delay entre a limpeza
 da tela e o início do desenho da nova imagem, garantindo que o
 controlador VGA finalizasse a operação de limpeza antes de receber os
@@ -470,6 +486,10 @@ possível — o PNG carrega informações adicionais (cabeçalho, compressão,
 possivelmente múltiplos canais) que não correspondem ao formato bruto de
 pixels em escala de cinza que o co-processador espera.
 
+<p align="center">
+  <img src="images/png.jpeg" alt="IP-Core" width="600">
+</p>
+
 **Como foi resolvido:** Foi desenvolvida a função `png_para_buffer`, que
 utiliza a biblioteca `stb_image` para decodificar o PNG, convertê-lo para
 um único canal (escala de cinza) e extrair os 784 valores de pixel no
@@ -488,6 +508,10 @@ matriz de pixels capturada, exibindo o vetor resultante de forma visual
 (usando caracteres para representar pixels pintados e vazios), permitindo
 conferir diretamente se a captura do desenho estava correta
 independentemente do que era mostrado no VGA.
+
+<p align="center">
+  <img src="images/terminal.jpeg" alt="IP-Core" width="600">
+</p>
 
 **Como foi resolvido:** Com esse retorno no terminal, foi possível
 confirmar que a captura da matriz estava funcionando corretamente,
