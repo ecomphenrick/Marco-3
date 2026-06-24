@@ -131,7 +131,9 @@ O módulo foi utilizado principalmente para exibir imagens do conjunto
 MNIST e para fornecer feedback visual durante o modo de desenho.
 
 <p align="center">
-  <img src="images/ipcore.png" alt="IP-Core" width="600">
+  <img src="images/ipcore.png" alt="IP-Core" width="400">
+   <br>
+  <em>Figura 1: Fluxograma do IP-Core.</em>
 </p>
 
 ### 2.2. Modos de Operação
@@ -324,7 +326,9 @@ automaticamente. As seções seguintes detalham cada um desses modos
 individualmente.
 
 <p align="center">
-  <img src="images/visaogeral.png" alt="Diagrama da arquitetura geral da aplicação" width="600">
+  <img src="images/visaogeral.png" alt="Diagrama da arquitetura geral da aplicação" width="400">
+   <br>
+  <em>Figura 2: Visão Geral da Aplicação</em>
 </p>
 
 ### 4.2. Modo Arquivo
@@ -354,7 +358,9 @@ hardware via `store_imagem`, e a inferência é disparada, retornando o
 dígito reconhecido.
 
 <p align="center">
-  <img src="images/arquivo.png" alt="IP-Core" width="600">
+  <img src="images/arquivo.png" alt="IP-Core" width="400">
+    <br>
+  <em>Figura 3: Fluxo Modo 1 (Arquivo).</em>
 </p>
 
 ### 4.3. Modo Desenho
@@ -391,7 +397,9 @@ utilizadas tanto para desenhar a interface do canvas quanto para
 refletir, em tempo real, os traços feitos pelo usuário.
 
 <p align="center">
-  <img src="images/desenho.png" alt="IP-Core" width="600">
+  <img src="images/desenho.png" alt="IP-Core" width="400">
+    <br>
+  <em>Figura 4: Fluxo Modo 2 (Desenho).</em>
 </p>
 
 ### 4.4. Modo Benchmark
@@ -419,7 +427,9 @@ com o detalhamento por imagem, e `metricas_gerais.csv` com o resumo geral
 e por classe).
 
 <p align="center">
-  <img src="images/benchmark.png" alt="IP-Core" width="600">
+  <img src="images/benchmark.png" alt="IP-Core" width="400">
+    <br>
+  <em>Figura 5: Fluxo Modo 3 (Benchmark).</em>
 </p>
 
 ---
@@ -464,7 +474,9 @@ funcionava corretamente — o problema estava no tempo entre a chamada de
 limpeza e a chamada de desenho seguinte.
 
 <p align="center">
-  <img src="images/clear.jpeg" alt="IP-Core" width="600">
+  <img src="images/clear.jpeg" alt="IP-Core" width="400">
+    <br>
+  <em>Figura 6: Teste vga_clear_screen .</em>
 </p>
 
 **Como foi resolvido:** Foi adicionado um pequeno delay entre a limpeza
@@ -488,6 +500,8 @@ pixels em escala de cinza que o co-processador espera.
 
 <p align="center">
   <img src="images/png.jpeg" alt="IP-Core" width="600">
+    <br>
+  <em>Figura 7: Teste PNG direto.</em>
 </p>
 
 **Como foi resolvido:** Foi desenvolvida a função `png_para_buffer`, que
@@ -510,7 +524,9 @@ conferir diretamente se a captura do desenho estava correta
 independentemente do que era mostrado no VGA.
 
 <p align="center">
-  <img src="images/terminal.jpeg" alt="IP-Core" width="600">
+  <img src="images/terminal.jpeg" alt="IP-Core" width="400">
+    <br>
+  <em>Figura 8: Teste desenho no terminal.</em>
 </p>
 
 **Como foi resolvido:** Com esse retorno no terminal, foi possível
@@ -680,4 +696,12 @@ treinamento.
 
 ## 9. Referências
 
-*(seção a ser escrita)*
+MATOS, Kamilly. coprocessador-de-imagens-pbl-sd-2. Versão/Branch principal. GitHub, 2026. Disponível em: https://github.com/kamillymatos/coprocessador-de-imagens-pbl-sd-2. Acesso em: 24 maio 2026.
+
+SILVA, Felipe. SistemasDigitais_Problema2. Versão/Branch principal. GitHub, 2026. Disponível em: https://github.com/Felipeacs05/SistemasDigitais_Problema2. Acesso em: 24 maio 2026.
+
+Oliveira, Maike. Problema_SD_2026_1. Versão/Branch principal. GitHub, 2026. Disponível em: https://github.com/DestinyWolf/Problema_SD_2026_1. Acesso em: 24 maio 2026.
+
+TERASIC TECHNOLOGIES. Terasic Inc.: Expertise in FPGA/ASIC Design. Disponível em: http://www.terasic.com.tw/. Acesso em: 24 maio 2026.
+
+As imagens do pseudocodigo, das syscalls e do fluxo foram feitas em Inteligência Artificial.
