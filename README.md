@@ -32,15 +32,14 @@ integrando o co-processador ELM desenvolvido nos marcos anteriores.
   - [4.4. Modo Benchmark](#44-modo-benchmark)
 - [5. Modo de Uso](#5-modo-de-uso)
 - [6. Testes](#6-testes)
-  - [6.1. Ambiente e Configuração de Teste](#61-ambiente-e-configuração-de-teste)
-  - [6.2. Casos de Teste / Cenários](#62-casos-de-teste--cenários)
-  - [6.3. Procedimento](#63-procedimento)
 - [7. Resultados](#7-resultados)
   - [7.1. Resultados — Modo Arquivo](#71-resultados--modo-arquivo)
   - [7.2. Resultados — Modo Desenho](#72-resultados--modo-desenho)
   - [7.3. Resultados — Modo Benchmark](#73-resultados--modo-benchmark)
   - [7.4. Análise / Discussão dos Resultados](#74-análise--discussão-dos-resultados)
-- [8. Referências](#8-referências)
+- [8. Conclusão](#8-conclusão)
+  - [8.1. Pontos de Melhoria](#81-pontos-de-melhoria)
+- [9. Referências](#9-referências)
 
 ---
 
@@ -431,17 +430,62 @@ ou Benchmark — digitando o número correspondente e pressionando Enter.
 
 ## 6. Testes
 
-### 6.1. Ambiente e Configuração de Teste
+### Teste 1 — Problema de sincronização na limpeza do VGA
 
-*(seção a ser escrita)*
+**Motivo:** A imagem anterior não estava sendo limpa corretamente no VGA
+antes da exibição de uma nova, sugerindo um problema de sincronização
+entre o comando de limpeza e a escrita dos novos pixels.
 
-### 6.2. Casos de Teste / Cenários
+**Como foi feito:** Para isolar o problema, a cor utilizada pela função
+de limpeza de tela (`vga_clear_screen`) foi temporariamente alterada para
+branco, tornando mais fácil visualizar se a limpeza estava de fato sendo
+executada antes do próximo desenho. O teste confirmou que a função em si
+funcionava corretamente — o problema estava no tempo entre a chamada de
+limpeza e a chamada de desenho seguinte.
 
-*(seção a ser escrita)*
+**Como foi resolvido:** Foi adicionado um pequeno delay entre a limpeza
+da tela e o início do desenho da nova imagem, garantindo que o
+controlador VGA finalizasse a operação de limpeza antes de receber os
+próximos pixels. Essa alteração eliminou o problema de sincronização.
 
-### 6.3. Procedimento
+### Teste 2 — Envio de imagem PNG diretamente ao co-processador
 
-*(seção a ser escrita)*
+**Motivo:** Verificar se era necessário converter o arquivo PNG para um
+vetor de bytes antes do envio, ou se o co-processador poderia recebê-lo
+diretamente. Até então, o fluxo testado utilizava apenas o caminho do
+arquivo `.bin`, sem passar por uma etapa de conversão de formato.
+
+**Como foi feito:** Foi feita uma tentativa de enviar o arquivo `.png`
+diretamente ao co-processador, como se já estivesse no formato de vetor
+de 784 bytes esperado pela rede. O teste confirmou que isso não era
+possível — o PNG carrega informações adicionais (cabeçalho, compressão,
+possivelmente múltiplos canais) que não correspondem ao formato bruto de
+pixels em escala de cinza que o co-processador espera.
+
+**Como foi resolvido:** Foi desenvolvida a função `png_para_buffer`, que
+utiliza a biblioteca `stb_image` para decodificar o PNG, convertê-lo para
+um único canal (escala de cinza) e extrair os 784 valores de pixel no
+formato correto antes do envio ao co-processador.
+
+### Teste 3 — Incerteza sobre o funcionamento do desenho no modo Desenho
+
+**Motivo:** A imagem exibida no VGA durante o modo Desenho parecia
+travada, e não havia como confirmar visualmente se os traços do usuário
+estavam sendo capturados e convertidos corretamente para a matriz de
+28×28, ou se o problema estava na captura do mouse, na atualização da
+tela, ou em ambos.
+
+**Como foi feito:** Foi adicionado um retorno no terminal que imprime a
+matriz de pixels capturada, exibindo o vetor resultante de forma visual
+(usando caracteres para representar pixels pintados e vazios), permitindo
+conferir diretamente se a captura do desenho estava correta
+independentemente do que era mostrado no VGA.
+
+**Como foi resolvido:** Com esse retorno no terminal, foi possível
+confirmar que a captura da matriz estava funcionando corretamente,
+isolando o problema de "tela travada" como sendo de exibição no VGA, e
+não de captura do desenho — direcionando a investigação para a causa
+certa.
 
 ---
 
@@ -449,22 +493,159 @@ ou Benchmark — digitando o número correspondente e pressionando Enter.
 
 ### 7.1. Resultados — Modo Arquivo
 
-*(seção a ser escrita)*
+Os resultados obtidos no modo Arquivo ficaram próximos do esperado, em
+linha com o desempenho já observado no marco anterior. A principal
+diferença introduzida neste marco foi a exibição da imagem no monitor
+VGA antes da inferência, que não impactou a acurácia — apenas adicionou
+o retorno visual ao usuário. Não há observações adicionais a registrar
+para este modo.
 
 ### 7.2. Resultados — Modo Desenho
 
-*(seção a ser escrita)*
+No modo Desenho, percebeu-se que a aplicação do filtro de suavização
+(`aplicar_blur`) teve impacto significativo na qualidade da inferência.
+Antes de sua aplicação, com a matriz capturada apenas em valores binários
+(0 ou 255), a inferência errava em mais de 90% dos casos. Com o blur, o
+resultado melhorou, mas ainda ficou abaixo da faixa de 70–80% observada
+nos outros modos.
+
+A conclusão do grupo foi de que a limitação está na natureza binária da
+captura: o co-processador foi treinado com imagens em escala de cinza
+(como as do conjunto MNIST), e a conversão atual do desenho gera apenas
+preto e branco puros, mesmo após a suavização. Um modo de captura que
+preservasse gradações de cinza — por exemplo, variando a intensidade
+conforme a velocidade ou pressão do traço — provavelmente levaria a uma
+inferência mais precisa.
+
+Em testes de bancada, foram realizados 10 desenhos para cada um dos 10
+dígitos, totalizando 100 amostras. A tabela abaixo resume os acertos por
+dígito:
+
+| Dígito | Acertos |
+|--------|---------|
+| 0      | 6/10    |
+| 1      | 5/10    |
+| 2      | 8/10    |
+| 3      | 9/10    |
+| 4      | 6/10    |
+| 5      | 5/10    |
+| 6      | 5/10    |
+| 7      | 3/10    |
+| 8      | 7/10    |
+| 9      | 6/10    |
+
+O dígito 7 apresentou o pior desempenho (3/10), enquanto o dígito 3 teve
+o melhor resultado (9/10) — possivelmente refletindo o quão bem o traço
+característico de cada dígito sobrevive à conversão para binário e ao
+blur.
 
 ### 7.3. Resultados — Modo Benchmark
 
-*(seção a ser escrita)*
+No modo Benchmark, executando o conjunto completo de 1000 imagens, a
+acurácia geral obtida foi de **79,50%**, com latência média de 16,750 ms
+por inferência, desvio padrão de 0,001 ms e throughput de 59,70
+imagens/s. A tabela abaixo apresenta a acurácia por dígito (100 amostras
+cada), extraída do arquivo `metricas_gerais.csv` gerado pela aplicação:
+
+| Dígito | Acertos | Acurácia |
+|--------|---------|----------|
+| 0      | 94/100  | 94,00%   |
+| 1      | 97/100  | 97,00%   |
+| 2      | 74/100  | 74,00%   |
+| 3      | 81/100  | 81,00%   |
+| 4      | 78/100  | 78,00%   |
+| 5      | 60/100  | 60,00%   |
+| 6      | 90/100  | 90,00%   |
+| 7      | 76/100  | 76,00%   |
+| 8      | 64/100  | 64,00%   |
+| 9      | 81/100  | 81,00%   |
+| **Total** | **795/1000** | **79,50%** |
+
+Os dígitos 5 e 8 apresentaram os piores desempenhos, com acurácia bem
+abaixo da média do sistema, enquanto os demais dígitos se mantiveram na
+faixa de 78–88%.
 
 ### 7.4. Análise / Discussão dos Resultados
 
-*(seção a ser escrita)*
+Comparando os três modos, o sistema apresentou desempenho consistente
+entre o modo Arquivo e o modo Benchmark — ambos próximos da faixa de
+79–80%, já esperada a partir do que havia sido observado no marco
+anterior. Isso confirma que o co-processador, isoladamente, mantém sua
+capacidade de classificação quando recebe imagens no formato para o qual
+foi treinado.
+
+O modo Desenho, por outro lado, evidenciou a principal limitação da
+solução: imagens capturadas via mouse e convertidas para um formato
+puramente binário (preto e branco) ficam significativamente abaixo da
+acurácia obtida com imagens em escala de cinza. A aplicação do filtro de
+suavização atenuou parte do problema, mas não o eliminou — reforçando a
+hipótese de que a ausência de gradação de cinza no traço capturado é a
+principal causa da diferença de desempenho entre os modos.
+
+No modo Desenho, o dígito 7 foi o que apresentou o pior desempenho, ao
+passo que no Benchmark os piores foram os dígitos 5 e 8 — o que sugere
+que a dificuldade de cada modo tem origens diferentes. No Desenho, o
+problema parece estar mais ligado a como o usuário traça cada dígito à
+mão (e à perda de informação na binarização do traço), enquanto no
+Benchmark, com imagens já em escala de cinza, a confusão entre 5 e 8 e
+demais dígitos provavelmente reflete limitações do próprio modelo ELM
+treinado, e não da etapa de captura.
+
+Em conjunto, os resultados sugerem que a arquitetura da solução está
+correta e que o co-processador atende ao que se propõe, mas que o ponto
+de maior potencial de melhoria está na etapa de captura e
+pré-processamento da imagem no modo Desenho — especificamente, na
+adoção de uma captura em escala de cinza em vez de binária.
 
 ---
 
-## 8. Referências
+## 8. Conclusão
+
+O desenvolvimento do Marco 3 foi concluído com sucesso, atingindo os
+objetivos propostos pelo enunciado. A equipe integrou o IP-Core VGA ao
+projeto já existente sem comprometer o funcionamento do co-processador e
+do driver herdados dos marcos anteriores, e desenvolveu uma aplicação
+completa em C com três modos de operação — Arquivo, Desenho e Benchmark
+—, cada um explorando uma forma distinta de fornecer a imagem de entrada
+ao sistema de classificação.
+
+Além do que foi requisitado, a equipe ampliou o escopo mínimo do Marco 3
+ao oferecer suporte tanto a arquivos `.bin` quanto a `.png` no modo
+Arquivo, e ao implementar um modo de benchmark em lote a partir de
+arquivo CSV, dando ao usuário mais flexibilidade na forma de validar o
+sistema.
+
+A validação do sistema foi realizada nos três modos de operação,
+atingindo uma acurácia média de aproximadamente **73%** entre eles. O
+resultado demonstra que a solução é funcional e estável na maior parte
+dos cenários, com desempenho mais consistente nos modos Arquivo e
+Benchmark — que trabalham com imagens em escala de cinza — e desempenho
+mais limitado no modo Desenho, no qual a captura via mouse gera uma
+imagem binária, diferente do formato com o qual a rede foi treinada.
+
+O projeto contribuiu significativamente para o aprendizado da equipe em
+áreas como integração de periféricos via MMIO (VGA e mouse),
+processamento e conversão de imagens, e construção de uma aplicação
+completa sobre um driver e um co-processador previamente validados,
+consolidando na prática os conceitos trabalhados ao longo da disciplina
+por meio da metodologia PBL.
+
+### 8.1. Pontos de Melhoria
+
+Um ponto de melhoria identificado diz respeito à forma como a imagem é
+capturada no modo Desenho. Atualmente, o traço do usuário é convertido
+em uma matriz puramente binária (0 ou 255), o que reduz significativamente
+a acurácia da inferência quando comparado aos modos que utilizam imagens
+em escala de cinza — formato com o qual o co-processador foi efetivamente
+treinado. Uma melhoria natural para versões futuras seria capturar o
+desenho preservando gradações de cinza, por exemplo, variando a
+intensidade do pixel de acordo com a velocidade do traço ou aplicando
+uma suavização mais sofisticada do que o filtro de blur atual,
+aproximando ainda mais a entrada do modo Desenho do padrão das imagens de
+treinamento.
+
+---
+
+## 9. Referências
 
 *(seção a ser escrita)*
