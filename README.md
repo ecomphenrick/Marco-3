@@ -10,18 +10,21 @@ integrando o co-processador ELM desenvolvido nos marcos anteriores.
 
 - [1. Introdução](#1-introdução)
   - [1.1. Sobre o Projeto](#11-sobre-o-projeto)
-  - [1.2. Contexto do Problema](#12-contexto-do-problema)
+  - [1.2. Contexto](#12-contexto)
   - [1.3. Requisitos Principais](#13-requisitos-principais)
 - [2. Fundamentação Teórica](#2-fundamentação-teórica)
   - [2.1. IP-Core VGA](#21-ip-core-vga)
-  - [2.2. Métricas de Benchmark](#22-métricas-de-benchmark)
-  - [2.3. Protocolo do Mouse Linux](#23-protocolo-do-mouse-linux)
+  - [2.2. Modos de Operação](#22-modos-de-operação)
+  - [2.3. Métricas de Benchmark](#23-métricas-de-benchmark)
+  - [2.4. Protocolo do Mouse Linux](#24-protocolo-do-mouse-linux)
 - [3. Materiais e Métodos](#3-materiais-e-métodos)
-  - [3.1. DE1-SoC](#31-de1-soc)
-  - [3.2. IP-Core VGA](#32-ip-core-vga)
-  - [3.3. Mouse](#33-mouse)
-  - [3.4. Driver Assembly — Marco 2](#34-driver-assembly--marco-2)
-  - [3.5. Metodologia](#35-metodologia)
+  - [3.1. Materiais](#31-materiais)
+    - [3.1.1. DE1-SoC](#311-de1-soc)
+    - [3.1.2. IP-Core VGA](#312-ip-core-vga)
+    - [3.1.3. Mouse](#313-mouse)
+    - [3.1.4. Co-processador — Marco 1](#314-co-processador--marco-1)
+    - [3.1.5. Driver Assembly — Marco 2](#315-driver-assembly--marco-2)
+  - [3.2. Metodologia](#32-metodologia)
 - [4. Arquitetura da Solução](#4-arquitetura-da-solução)
   - [4.1. Visão Geral](#41-visão-geral)
   - [4.2. Núcleo Comum de Inferência](#42-núcleo-comum-de-inferência)
@@ -45,8 +48,16 @@ integrando o co-processador ELM desenvolvido nos marcos anteriores.
 
 ## 1. Introdução
 
-Este documento descreve o desenvolvimento do Marco 3 de um sistema embarcado para classificação de dígitos numéricos. O sistema completo combina um co-processador implementado em Verilog na FPGA Cyclone V da placa DE1-SoC, desenvolvido no Marco 1, com um driver em linguagem Assembly ARMv7 — responsável pela comunicação entre o HPS e o hardware via MMIO, desenvolvido e validado no Marco 2 —, integrado a uma aplicação completa em C.
-O objetivo do Marco 3 é entregar essa aplicação final, voltada diretamente ao usuário, incorporando uma interface visual via VGA e três modos distintos de utilização: classificação a partir de arquivo, classificação a partir de desenho feito com o mouse, e um modo de benchmark automatizado para avaliação de desempenho do sistema.
+Este repositório corresponde ao Marco 3 da disciplina de Sistemas Digitais
+(TEC499). Os dois marcos anteriores trataram da implementação em hardware e
+da comunicação com a FPGA; esta etapa final entrega a aplicação em C que o
+usuário efetivamente utiliza para classificar dígitos.
+
+No Marco 1, o co-processador ELM foi implementado na FPGA da DE1-SoC. No
+Marco 2, o driver em Assembly ARM responsável pela comunicação entre o HPS
+e o hardware via MMIO foi desenvolvido e validado. O Marco 3 fecha esse
+ciclo com uma aplicação completa, incorporando interface visual via VGA e
+três modos distintos de utilização.
 
 ### 1.1. Sobre o Projeto
 
@@ -61,7 +72,7 @@ disciplina, que permite tanto exibir imagens no monitor quanto capturar,
 via mouse, o desenho produzido pelo usuário para posterior envio ao
 co-processador.
 
-### 1.2. Contexto do problema
+### 1.2. Contexto
 
 No Marco 2, o driver já operava corretamente, com acurácia acima de 80% nos
 testes realizados, mas a inferência era acionada apenas por um programa de
@@ -85,7 +96,7 @@ foram:
 
 - **Integração do IP-Core VGA** — conectar o módulo de vídeo fornecido pelo
   tutor ao projeto existente, sem necessidade de alterar o co-processador.
-- **Modo Arquivo** — ler uma imagem em formato `.bin` ou `.png` armazenada e
+- **Modo Arquivo** — ler uma imagem em formato `.bin` armazenada em disco e
   classificá-la utilizando o co-processador.
 - **Modo Desenho** — permitir que o usuário desenhe um dígito na tela
   usando o mouse, e classificar o resultado.
@@ -122,7 +133,25 @@ significativos definem a cor em RGB (3 bits para vermelho, 3 para verde e
 O módulo foi utilizado principalmente para exibir imagens do conjunto
 MNIST e para fornecer feedback visual durante o modo de desenho.
 
-### 2.2. Métricas de Benchmark
+### 2.2. Modos de Operação
+
+A aplicação possui três modos principais:
+
+- **Arquivo** — o usuário informa o caminho de uma imagem MNIST em formato
+  binário; a imagem é exibida na tela, enviada ao co-processador, e o
+  dígito reconhecido é apresentado ao usuário.
+- **Desenho** — o usuário desenha um dígito com o mouse (botão esquerdo
+  desenha, botão direito confirma). Após a confirmação, o desenho é
+  convertido para o formato esperado pela rede e submetido à classificação,
+  passando antes por um filtro de suavização que aproxima o traço do
+  padrão das imagens de treinamento.
+- **Benchmark** — executa automaticamente a classificação de um conjunto de
+  1000 imagens, exibindo cada uma no monitor durante o processamento. O
+  gabarito segue uma distribuição fixa por faixas de índice (cada faixa de
+  100 imagens corresponde a um dígito, de 0 a 9). Ao final, são calculadas
+  métricas de desempenho e gerado um arquivo CSV com os resultados.
+
+### 2.3. Métricas de Benchmark
 
 As métricas adotadas para avaliação de desempenho são as usualmente
 empregadas em aplicações de classificação de imagens:
@@ -136,7 +165,7 @@ empregadas em aplicações de classificação de imagens:
 - **Throughput** — quantidade de imagens classificadas por segundo,
   indicando a capacidade geral de processamento da solução.
 
-### 2.3. Protocolo do Mouse Linux
+### 2.4. Protocolo do Mouse Linux
 
 No Linux, dispositivos de hardware são representados como arquivos,
 seguindo o princípio Unix de que "tudo é arquivo". Um mouse USB conectado
@@ -161,7 +190,9 @@ limitada à área de desenho, evitando que o cursor saia do canvas.
 
 ## 3. Materiais e Métodos
 
-### 3.1. DE1-SoC
+### 3.1. Materiais
+
+#### 3.1.1. DE1-SoC
 
 A DE1-SoC permanece como a plataforma principal do projeto, combinando um
 processador ARM Cortex-A9 dual-core (executando Linux embarcado) com uma
@@ -173,7 +204,7 @@ Lightweight Bridge. Um monitor VGA externo e um mouse USB foram conectados
 para interação com o sistema, e um novo arquivo `.sof` foi gerado e
 gravado na FPGA para refletir essas alterações.
 
-### 3.2. IP-Core VGA
+#### 3.1.2. IP-Core VGA
 
 O IP-Core VGA é responsável pela geração da saída de vídeo da DE1-SoC,
 produzindo automaticamente os sinais de sincronismo horizontal (hsync) e
@@ -188,7 +219,7 @@ onde são enviadas as coordenadas e a cor de cada pixel. Os valores de
 posição X, posição Y e componentes RGB são combinados em uma única palavra
 de 32 bits antes da escrita no registrador de dados.
 
-### 3.3. Mouse
+#### 3.1.3. Mouse
 
 O mouse é o principal dispositivo de entrada no modo de desenho. Ao ser
 conectado à DE1-SoC, é reconhecido automaticamente pelo Linux embarcado,
@@ -208,26 +239,73 @@ ser acionado, o programa encerra a captura de eventos do mouse, extrai a
 matriz 28×28 resultante, aplica o filtro de suavização (blur) e envia os
 dados ao co-processador para inferência.
 
-### 3.4. Driver Assembly — Marco 2
+#### 3.1.4. Co-processador — Marco 1
 
-O driver Assembly desenvolvido no Marco 2 foi reaproveitado integralmente
-no Marco 3. As funções de mapeamento de memória (`mapeia_memoria()`),
-reset do co-processador (`reset_coprocessador()`) e início da inferência
+O co-processador utilizado neste projeto foi cedido aos grupos e
+implementado pelo monitor da disciplina, Maike de Oliveira. Junto a ele,
+foi entregue uma documentação detalhada cobrindo seu modo de uso e
+funcionamento interno.
+
+A partir desse material, o grupo iniciou o processo de compreender como o
+co-processador funcionava e, principalmente, como ele seria utilizado no
+projeto. Ficou estabelecido nas sessões tutoriais que o co-processador
+seria tratado como uma caixa-preta — ou seja, sem necessidade de alterar
+sua implementação interna —, mas que caberia ao grupo conectá-lo
+corretamente ao restante do sistema, já que essa integração entre a FPGA
+e o HPS era justamente a base do problema proposto no Marco 2.
+
+Para mais detalhes sobre a implementação interna do co-processador,
+recomenda-se consultar o repositório do monitor Maike, indicado na seção
+de Referências.
+
+#### 3.1.5. Driver Assembly — Marco 2
+
+O driver Assembly desenvolvido no Marco 2 foi reaproveitado no Marco 3. As
+funções de mapeamento de memória (`mapeia_memoria()`), reset do
+co-processador (`reset_coprocessador()`) e início da inferência
 (`comeca_infer()`) permaneceram inalteradas.
 
-A principal mudança ocorreu nas funções de transferência de dados, que
-passaram a receber buffers já carregados em memória em vez de caminhos de
-arquivo — por exemplo, `store_bias(base, buf_bias)`. A função
-`store_pesos` também passou a receber um terceiro parâmetro indicando a
-quantidade de valores a enviar, como em
-`store_pesos(base, buf_pesos, 100352)`. Essa mudança permitiu separar o
-tempo de pré-processamento e leitura de arquivos do tempo efetivo de
-comunicação com o hardware, tornando as medições de desempenho mais
-precisas.
+A principal mudança ocorreu nas funções de transferência de dados: elas
+deixaram de receber caminhos de arquivo como parâmetro e passaram a
+receber diretamente os buffers já carregados em memória — por exemplo,
+`store_bias(base, buf_bias)`. Essa mudança permitiu separar o tempo de
+pré-processamento e leitura de arquivos do tempo efetivo de comunicação
+com o hardware, tornando as medições de desempenho mais precisas.
 
-### 3.5. Metodologia
+### 3.2. Metodologia
 
-*(seção a ser escrita)*
+Este projeto foi desenvolvido por meio da metodologia PBL (Problem Based
+Learning), em que o aprendizado é conduzido a partir de um problema real
+proposto pelo professor. As atividades são organizadas em sessões
+tutoriais, nas quais o grupo assume cargos definidos e cumpre metas
+estabelecidas para aquela etapa, e em sessões de desenvolvimento, nas
+quais a equipe trabalha na implementação da solução.
+
+A condução do Marco 3 seguiu os seguintes passos:
+
+1. **Entendimento do problema** — compreensão do que precisava ser
+   entregue nesta etapa e definição de por onde o desenvolvimento deveria
+   seguir.
+2. **Priorização do modo Desenho** — após a análise inicial, identificou-se
+   que o modo Desenho seria provavelmente o mais complexo de implementar
+   entre os três modos, e por isso o trabalho começou por ele.
+3. **Conexão dos PIOs e uso inicial do VGA e do mouse** — etapa de
+   familiarização prática com os novos periféricos, validando a
+   comunicação básica antes de integrá-los à lógica da aplicação.
+4. **Implementação do modo Desenho** — com o funcionamento do VGA e do
+   mouse compreendido, foram implementadas as funções referentes a esse
+   modo (detalhadas na seção [Descrição da Solução](#5-descrição-da-solução)).
+5. **Implementação do modo Arquivo** — finalizado o modo Desenho, o
+   desenvolvimento avançou para a função de inferência a partir de
+   arquivo, incluindo a elaboração da função `png_para_buffer`, que
+   estendeu o suporte para além do formato `.bin`, passando a aceitar
+   também imagens `.png` (mais detalhes na seção
+   [Descrição da Solução](#5-descrição-da-solução)).
+6. **Implementação do modo Benchmark** — por fim, foi desenvolvida a
+   função do modo Benchmark, considerada a mais simples pelo grupo, já
+   que uma lógica semelhante havia sido utilizada no marco anterior.
+   A principal adição foi a função de geração do log de resultados em
+   CSV.
 
 ---
 
