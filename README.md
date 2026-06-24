@@ -93,7 +93,7 @@ foram:
 
 - **Integração do IP-Core VGA** — conectar o módulo de vídeo fornecido pelo
   tutor ao projeto existente, sem necessidade de alterar o co-processador.
-- **Modo Arquivo** — ler uma imagem em formato `.bin` armazenada em disco e
+- **Modo Arquivo** — ler uma imagem armazenada em disco e
   classificá-la utilizando o co-processador.
 - **Modo Desenho** — permitir que o usuário desenhe um dígito na tela
   usando o mouse, e classificar o resultado.
@@ -125,7 +125,7 @@ registradores mapeados em memória, permitindo o envio individual de pixels
 para a tela. Cada pixel é representado por uma palavra de 32 bits: os bits
 mais significativos codificam as coordenadas X e Y, enquanto os bits menos
 significativos definem a cor em RGB (3 bits para vermelho, 3 para verde e
-2 para azul).
+3 para azul).
 
 O módulo foi utilizado principalmente para exibir imagens do conjunto
 MNIST e para fornecer feedback visual durante o modo de desenho.
