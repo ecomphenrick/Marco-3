@@ -25,24 +25,22 @@ integrando o co-processador ELM desenvolvido nos marcos anteriores.
     - [3.1.4. Co-processador — Marco 1](#314-co-processador--marco-1)
     - [3.1.5. Driver Assembly — Marco 2](#315-driver-assembly--marco-2)
   - [3.2. Metodologia](#32-metodologia)
-- [4. Arquitetura da Solução](#4-arquitetura-da-solução)
+- [4. Arquitetura e Descrição da Solução](#4-arquitetura-e-descrição-da-solução)
   - [4.1. Visão Geral](#41-visão-geral)
-  - [4.2. Núcleo Comum de Inferência](#42-núcleo-comum-de-inferência)
-- [5. Descrição da Solução](#5-descrição-da-solução)
-  - [5.1. Modo Arquivo](#51-modo-arquivo)
-  - [5.2. Modo Desenho](#52-modo-desenho)
-  - [5.3. Modo Benchmark](#53-modo-benchmark)
-- [6. Modo de Uso](#6-modo-de-uso)
-- [7. Testes](#7-testes)
-  - [7.1. Ambiente e Configuração de Teste](#71-ambiente-e-configuração-de-teste)
-  - [7.2. Casos de Teste / Cenários](#72-casos-de-teste--cenários)
-  - [7.3. Procedimento](#73-procedimento)
-- [8. Resultados](#8-resultados)
-  - [8.1. Resultados — Modo Arquivo](#81-resultados--modo-arquivo)
-  - [8.2. Resultados — Modo Desenho](#82-resultados--modo-desenho)
-  - [8.3. Resultados — Modo Benchmark](#83-resultados--modo-benchmark)
-  - [8.4. Análise / Discussão dos Resultados](#84-análise--discussão-dos-resultados)
-- [9. Referências](#9-referências)
+  - [4.2. Modo Arquivo](#42-modo-arquivo)
+  - [4.3. Modo Desenho](#43-modo-desenho)
+  - [4.4. Modo Benchmark](#44-modo-benchmark)
+- [5. Modo de Uso](#5-modo-de-uso)
+- [6. Testes](#6-testes)
+  - [6.1. Ambiente e Configuração de Teste](#61-ambiente-e-configuração-de-teste)
+  - [6.2. Casos de Teste / Cenários](#62-casos-de-teste--cenários)
+  - [6.3. Procedimento](#63-procedimento)
+- [7. Resultados](#7-resultados)
+  - [7.1. Resultados — Modo Arquivo](#71-resultados--modo-arquivo)
+  - [7.2. Resultados — Modo Desenho](#72-resultados--modo-desenho)
+  - [7.3. Resultados — Modo Benchmark](#73-resultados--modo-benchmark)
+  - [7.4. Análise / Discussão dos Resultados](#74-análise--discussão-dos-resultados)
+- [8. Referências](#8-referências)
 
 ---
 
@@ -309,76 +307,164 @@ A condução do Marco 3 seguiu os seguintes passos:
 
 ---
 
-## 4. Arquitetura da Solução
+## 4. Arquitetura e Descrição da Solução
 
 ### 4.1. Visão Geral
 
+A solução é composta por uma aplicação em C que orquestra três modos de
+operação — Arquivo, Desenho e Benchmark —, todos convergindo para o mesmo
+fluxo de inferência: carregar os pesos da rede no co-processador, enviar
+uma imagem de 28×28 pixels e ler o dígito resultante. O que diferencia os
+modos é apenas a origem dessa imagem — um arquivo em disco, um desenho
+feito pelo usuário via mouse, ou um lote de imagens processado
+automaticamente. As seções seguintes detalham cada um desses modos
+individualmente.
+
+### 4.2. Modo Arquivo
+
+O modo Arquivo segue uma lógica de conversão inversa à do modo Desenho: em
+vez de comprimir um desenho de 224×224 para uma matriz de 28×28, ele
+expande uma imagem já pronta de 28×28 (784 pixels) para a área de 224×224
+do VGA, permitindo exibi-la na tela antes da inferência.
+
+O usuário informa o caminho de um arquivo, que pode estar em formato
+`.bin` ou `.png`. No caso de um `.bin`, os 784 bytes são lidos diretamente
+do disco para o buffer da imagem. No caso de um `.png`, a biblioteca
+`stb_image` é utilizada para carregar o arquivo e convertê-lo para um
+único canal (escala de cinza), preenchendo o mesmo buffer de 784
+posições.
+
+Com a imagem em mãos, a lógica é percorrer cada um dos 784 pixels da
+matriz 28×28: para cada pixel, calcula-se a intensidade de cinza
+correspondente e desenha-se, no VGA, um quadrado de 8×8 pixels naquela
+tonalidade — ocupando a posição equivalente dentro da área de 224×224
+reservada na tela. Esse processo de ampliação é o que torna a imagem de
+28×28, originalmente pequena, visível e legível ao usuário antes do envio
+ao co-processador.
+
+Após a exibição, os pesos da rede são carregados, a imagem é enviada ao
+hardware via `store_imagem`, e a inferência é disparada, retornando o
+dígito reconhecido.
+
+### 4.3. Modo Desenho
+
+No modo Desenho, a ideia em alto nível foi permitir que o usuário
+desenhasse um dígito diretamente na tela usando o mouse, dentro de uma
+área de 224×224 pixels reservada no VGA, e depois comprimir esse desenho
+para uma matriz de 28×28 — o formato de entrada esperado pela rede
+neural.
+
+Essa área de desenho é dividida em uma grade de 28×28 células, cada uma
+correspondendo a um bloco de 8×8 pixels na tela. Durante a captura, o
+movimento do mouse é lido continuamente do arquivo `/dev/input/mice`, e a
+posição do cursor é atualizada com base nos deslocamentos relativos
+reportados pelo dispositivo. Enquanto o botão esquerdo está pressionado,
+os pixels ao redor do cursor são pintados tanto no canvas interno quanto
+na tela; o botão do meio limpa a área de desenho, e o botão direito
+finaliza a captura.
+
+Após o usuário finalizar o desenho, o programa percorre cada uma das
+28×28 células da grade e verifica se algum pixel dentro daquele bloco de
+8×8 foi pintado. Caso tenha sido, a célula correspondente recebe o valor
+255 na matriz final; caso contrário, recebe 0. O resultado é, então,
+suavizado por um filtro de blur (média dos vizinhos), que aproxima o
+traço grosso do mouse da textura mais suave dos dígitos manuscritos do
+conjunto de treinamento, antes de ser enviado ao co-processador para
+inferência.
+
+Para viabilizar esse modo, foi necessário implementar, além da lógica
+própria de captura e conversão, um conjunto de funções de suporte ao VGA:
+`vga_reset` (reinicialização do controlador), `vga_clear_screen` (limpeza
+da tela) e `vga_draw_pixel` (escrita individual de pixels), todas
+utilizadas tanto para desenhar a interface do canvas quanto para
+refletir, em tempo real, os traços feitos pelo usuário.
+
+### 4.4. Modo Benchmark
+
+O modo Benchmark automatiza a classificação de um conjunto de imagens
+para avaliar o desempenho do sistema como um todo. Ele espera encontrar,
+na pasta `bins/`, arquivos numerados de `0.bin` a `999.bin`, totalizando
+1000 imagens.
+
+O gabarito de cada imagem não é lido de um arquivo separado, mas sim
+derivado diretamente do índice numérico do arquivo: a divisão inteira do
+número da imagem por 100 determina o dígito correto esperado. Dessa
+forma, as imagens de índice 0 a 99 correspondem ao dígito 0, de 100 a 199
+ao dígito 1, e assim por diante até 900 a 999 corresponderem ao dígito 9
+— resultando em 100 imagens para cada um dos 10 dígitos.
+
+Para cada imagem do conjunto, o programa carrega o arquivo
+correspondente, envia-o ao co-processador e mede o tempo de inferência
+usando `clock_gettime`, comparando o dígito inferido com o dígito
+esperado (obtido pelo índice) para contabilizar acertos e erros, tanto de
+forma geral quanto por classe. Ao final do processamento, são calculadas
+as métricas de desempenho — acurácia, latência média, desvio padrão e
+throughput — e os resultados são salvos em arquivos CSV (`resultado.csv`
+com o detalhamento por imagem, e `metricas_gerais.csv` com o resumo geral
+e por classe).
+
+---
+
+## 5. Modo de Uso
+
+**Passo 1:** Conecte a placa DE1-SoC ao computador via cabo USB-Blaster
+(para programação da FPGA) e via Ethernet ou USB-serial (para acesso via
+SSH ao Linux embarcado).
+
+**Passo 2:** Faça o download do projeto e, via SSH, transfira a pasta
+`Aplicação` para a placa.
+
+**Passo 3:** Abra a pasta `Coprocessador` no Quartus, compile o projeto e
+programe o arquivo `.sof` gerado na placa.
+
+**Passo 4:** No terminal da placa, dentro da pasta do projeto, execute
+`make` para compilar o executável.
+
+**Passo 5:** Em seguida, execute o programa com `sudo ./exe` (ou apenas
+`./exe`, dependendo das permissões de acesso ao `/dev/input/mice` e à
+memória mapeada).
+
+**Passo 6:** No menu exibido, escolha o modo desejado — Arquivo, Desenho
+ou Benchmark — digitando o número correspondente e pressionando Enter.
+
+---
+
+## 6. Testes
+
+### 6.1. Ambiente e Configuração de Teste
+
 *(seção a ser escrita)*
 
-### 4.2. Núcleo Comum de Inferência
+### 6.2. Casos de Teste / Cenários
+
+*(seção a ser escrita)*
+
+### 6.3. Procedimento
 
 *(seção a ser escrita)*
 
 ---
 
-## 5. Descrição da Solução
+## 7. Resultados
 
-### 5.1. Modo Arquivo
-
-*(seção a ser escrita)*
-
-### 5.2. Modo Desenho
+### 7.1. Resultados — Modo Arquivo
 
 *(seção a ser escrita)*
 
-### 5.3. Modo Benchmark
+### 7.2. Resultados — Modo Desenho
 
 *(seção a ser escrita)*
 
----
-
-## 6. Modo de Uso
+### 7.3. Resultados — Modo Benchmark
 
 *(seção a ser escrita)*
 
----
-
-## 7. Testes
-
-### 7.1. Ambiente e Configuração de Teste
-
-*(seção a ser escrita)*
-
-### 7.2. Casos de Teste / Cenários
-
-*(seção a ser escrita)*
-
-### 7.3. Procedimento
+### 7.4. Análise / Discussão dos Resultados
 
 *(seção a ser escrita)*
 
 ---
 
-## 8. Resultados
-
-### 8.1. Resultados — Modo Arquivo
-
-*(seção a ser escrita)*
-
-### 8.2. Resultados — Modo Desenho
-
-*(seção a ser escrita)*
-
-### 8.3. Resultados — Modo Benchmark
-
-*(seção a ser escrita)*
-
-### 8.4. Análise / Discussão dos Resultados
-
-*(seção a ser escrita)*
-
----
-
-## 9. Referências
+## 8. Referências
 
 *(seção a ser escrita)*
