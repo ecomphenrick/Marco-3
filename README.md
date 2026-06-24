@@ -130,6 +130,10 @@ significativos definem a cor em RGB (3 bits para vermelho, 3 para verde e
 O módulo foi utilizado principalmente para exibir imagens do conjunto
 MNIST e para fornecer feedback visual durante o modo de desenho.
 
+<p align="center">
+  <img src="ipcore.png" alt="IP-Core" width="600">
+</p>
+
 ### 2.2. Modos de Operação
 
 A aplicação possui três modos principais:
@@ -318,6 +322,10 @@ modos é apenas a origem dessa imagem — um arquivo em disco, um desenho
 feito pelo usuário via mouse, ou um lote de imagens processado
 automaticamente. As seções seguintes detalham cada um desses modos
 individualmente.
+
+<p align="center">
+  <img src="visaogeral.png" alt="Diagrama da arquitetura geral da aplicação" width="600">
+</p>
 
 ### 4.2. Modo Arquivo
 
