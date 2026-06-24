@@ -133,7 +133,7 @@ MNIST e para fornecer feedback visual durante o modo de desenho.
 <p align="center">
   <img src="images/ipcore.png" alt="IP-Core" width="400">
    <br>
-  <em>Figura 1: Fluxograma do IP-Core.</em>
+  <em>Figura 1: Fluxograma do IP-Core (Gerada com IA). </em>
 </p>
 
 ### 2.2. Modos de Operação
@@ -328,7 +328,7 @@ individualmente.
 <p align="center">
   <img src="images/visaogeral.png" alt="Diagrama da arquitetura geral da aplicação" width="400">
    <br>
-  <em>Figura 2: Visão Geral da Aplicação</em>
+  <em>Figura 2: Visão Geral da Aplicação (Gerado com IA).</em>
 </p>
 
 ### 4.2. Modo Arquivo
@@ -360,7 +360,7 @@ dígito reconhecido.
 <p align="center">
   <img src="images/arquivo.png" alt="IP-Core" width="400">
     <br>
-  <em>Figura 3: Fluxo Modo 1 (Arquivo).</em>
+  <em>Figura 3: Fluxo Modo 1 - Arquivo (Gerado com IA).</em>
 </p>
 
 ### 4.3. Modo Desenho
@@ -399,8 +399,8 @@ refletir, em tempo real, os traços feitos pelo usuário.
 <p align="center">
   <img src="images/desenho.png" alt="IP-Core" width="400">
     <br>
-  <em>Figura 4: Fluxo Modo 2 (Desenho).</em>
-</p>
+  <em>Figura 4: Fluxo Modo 2 - Desenho (Gerado com IA)..</em>
+</p> 
 
 ### 4.4. Modo Benchmark
 
@@ -429,7 +429,7 @@ e por classe).
 <p align="center">
   <img src="images/benchmark.png" alt="IP-Core" width="400">
     <br>
-  <em>Figura 5: Fluxo Modo 3 (Benchmark).</em>
+  <em>Figura 5: Fluxo Modo 3 - Benchmark (Gerado com IA).</em>
 </p>
 
 ---
@@ -704,4 +704,8 @@ Oliveira, Maike. Problema_SD_2026_1. Versão/Branch principal. GitHub, 2026. Dis
 
 TERASIC TECHNOLOGIES. Terasic Inc.: Expertise in FPGA/ASIC Design. Disponível em: http://www.terasic.com.tw/. Acesso em: 24 maio 2026.
 
-As imagens do pseudocodigo, das syscalls e do fluxo foram feitas em Inteligência Artificial.
+PATTERSON, David A.; HENNESSY, John L. **Computer Organization and
+Design: The Hardware/Software Interface, ARM Edition**. Amsterdam:
+Morgan Kaufmann, 2017.
+
+As imagens do IP-Core, da Visão Geral e dos fluxos de cada modo foram feitas com Inteligência Artificial.
